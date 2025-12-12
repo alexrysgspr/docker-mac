@@ -1,0 +1,90 @@
+version: "3.9"
+#docker-compose -p local-dev up -d
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres-db
+    environment:
+      POSTGRES_PASSWORD: "${POSTGRESS_PASSWORD}"
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: azurite-db
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+    volumes:
+      - azurite-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:10000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mssql-db
+    hostname: mssql-db
+    platform: linux/amd64
+    environment:
+      ACCEPT_EULA: "${ACCEPT_EULA}"
+      SA_PASSWORD: "${MSSQL_SA_PASSWORD}"
+    ports:
+      - "1433:1433"
+    networks:
+      - local-net
+    volumes:
+      - mssql-data:/var/opt/mssql
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P '${MSSQL_SA_PASSWORD}' -Q 'SELECT 1' -C || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  servicebus:
+    container_name: "servicebus-emulator"
+    image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+    pull_policy: always
+    ports:
+      - "5672:5672"
+      - "5300:5300"
+    environment:
+      SQL_SERVER: mssql
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD}"
+      ACCEPT_EULA: "${ACCEPT_EULA}"
+    depends_on:
+      - mssql
+    networks:
+      - local-net
+    volumes:
+      - "${SERVICE_BUS_CONFIG_PATH}:/ServiceBus_Emulator/ConfigFiles/Config.json"
+
+networks:
+  local-net:
+    driver: bridge
+
+volumes:
+  mssql-data:
+    external: true
+  postgres-data:
+    external: true
+  azurite-data:
+    external: true
