@@ -77,6 +77,22 @@ services:
     volumes:
       - "${SERVICE_BUS_CONFIG_PATH}:/ServiceBus_Emulator/ConfigFiles/Config.json"
 
+  servicebus-explorer:
+    container_name: servicebus-explorer
+    build:
+      context: ./servicebus-explorer
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"
+    environment:
+      SERVICE_BUS_CONNECTION_STRING: "Endpoint=sb://servicebus-emulator:5672;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
+    depends_on:
+      - servicebus
+    networks:
+      - local-net
+    restart: unless-stopped
+
 networks:
   local-net:
     driver: bridge
