@@ -76,6 +76,7 @@ services:
       - local-net
     volumes:
       - "${SERVICE_BUS_CONFIG_PATH}:/ServiceBus_Emulator/ConfigFiles/Config.json"
+    restart: unless-stopped
 
   servicebus-explorer:
     container_name: servicebus-explorer
