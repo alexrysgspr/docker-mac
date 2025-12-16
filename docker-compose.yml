@@ -92,7 +92,6 @@ services:
       - servicebus
     networks:
       - local-net
-    restart: unless-stopped
 
 networks:
   local-net:
